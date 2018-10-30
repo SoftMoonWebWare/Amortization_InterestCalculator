@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name='author' content='Joe Golembieski, SoftMoon-WebWare' />
+<meta name='copyright' content='Copyright © 2016, 2018 Joe Golembieski, SoftMoon-WebWare' />
+<title>JavaScript Loan Interest Calculator and Amortization Table Generator *DEMO*</title>
+<style type='text/css'>
+label {
+	display: block;
+	margin-bottom: .38em; }
+label span {
+	display: inline-block;
+	width: 10em;
+	text-align: right; }
+input {
+	padding-left: .38em; }
+input.money {
+	padding-left: .16em; }
+input.percent {
+	text-align: right; }
+table.amortization {
+	color: black;
+	background-color: white;
+	width: 38em;
+	margin: 1em auto; }
+.amortization caption {
+	font-size: 1.38em;
+	font-weight: bold; }
+.amortization tbody th, .amortization tbody td {
+	width: 20%;
+	text-align: center; }
+table.loan_summary {
+	width: auto;
+	margin: .38em auto; }
+.loan_summary tbody th, .loan_summary tbody td {
+	width: 50%;
+	text-align: left;
+	white-space: nowrap;
+	padding: .16em .38em; }
+.loan_summary tbody th {
+	text-align: right; }
+.even {
+	background-color: #E0E0FF; }
+.odd {
+	background-color: #FFE0E0; }
+.amortization tfoot td:last-child {
+	text-align: right; }
+</style>
+
+<script type='text/javascript' src="JS_toolbucket/SoftMoon-WebWare/amortization_table.js"></script>
+
+</head>
+<body>
+
+<!--  The enclosing form may have any attribute values as you desire  -->
+<form id='loan_calc' action='javascript:void(0)'>
+<!--  To work with the calculator’s native form-interface code,
+      the input names must match the calculator’s enumerable properties, as shown below.
+      All inputs are optional.  Additional form elements are ignored.  -->
+<label><span>Item Price: $</span><input type='number' step='.01' name='total_price' value='249000' maxlength='10' class='money' /></label>
+<label><span>Downpayment: $</span><input type='number' step='any' name='downpayment' value='24900' maxlength='10' class='money' /></label>
+<label><span>Downpayment Rate:&nbsp;</span><input type='number' step='any' name='downpayment_rate' value='' maxlength='10' class='percent' />%</label>
+<label><span>Loan Amount: $</span><input type='number' step='any' name='loan_amount' value='' maxlength='10' class='money' /></label>
+<label><span><abbr title='Annual Percentage Rate'>APR</abbr>:&nbsp;</span><input type='number' step='any' name='apr' value='4.299' maxlength='7' class='percent' />%</label>
+<label><span>Number of Payments:&nbsp;</span><input type='number' step='1' name='cycles_loaned' value='120' maxlength='4' /></label>
+<label><span>Payments per Year:&nbsp;</span><input type='number' step='1' name='cycles_per_year' value='12' list='standard_payment_plans' maxlength='4' /></label>
+	<datalist id='standard_payment_plans'>
+		<option value='12'> (monthly)</option>
+		<option value='52'> (weekly)</option>
+	</datalist>
+<label><span>Payment Amount: $</span><input type='number' step='any' name='cyclical_payment' value='' maxlength='10' class='money' /></label>
+<!--  To work with the calculator’s native form-interface code,
+      the button must have the name shown below  -->
+<button name='show_Amortization'>show Amortization Table</button>
+</form>
+
+<script type='text/javascript'>
+var myCalc=new SoftMoon.WebWare.Amortization_InterestCalculator(document.forms.loan_calc);
+</script>
+
+<!--  The default id for the container that receives the created Amortization Table pop-up is shown below.
+      It may be changed and customized for each of multiple calculators (see the script).
+      The container may be any Element capable of childNodes, and may be placed anywhere in the document.  -->
+<div id='amortization'></div>
+
+</body>
+</html>
