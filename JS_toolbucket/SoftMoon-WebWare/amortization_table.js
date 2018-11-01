@@ -1,4 +1,4 @@
-/*  Amortization & Interest Calculator 2.0   Oct 30, 2018
+/*  Amortization & Interest Calculator 2.0   Nov 1, 2018
  *  copyright © 2016, 2018 Joe Golembieski, SoftMoon-WebWare
  *  http://softmoon-webware.com/
  *
@@ -18,13 +18,16 @@
 
 //  character-encoding: UTF-8 UNIX   tab-spacing: 2   word-wrap: no   standard-line-length: 180   max-line-length: 2400
 
+//  for ECMAScript 5;  not for MSIE<9
+
 
 //rounds  x  to  dp  decimal places.
 if (typeof Math.roundTo !== 'function')
 	Math.roundTo=function(x, dp)  {return Math.round(x*Math.pow(10,dp))/Math.pow(10,dp);}
 
 
-if (!SoftMoon ||  typeof SoftMoon !== 'object')  var SoftMoon={WebWare: {}};
+if (typeof SoftMoon !== 'object')  var SoftMoon={};
+if (typeof SoftMoon.WebWare !== 'object')  SoftMoon.WebWare={};
 
 
 
@@ -37,8 +40,8 @@ SoftMoon.WebWare.Amortization_InterestCalculator=function($amount, $cycles_loane
 		var inps=this.form.elements;
 		$amount=         inps.total_price     && parseFloat(inps.total_price.value);
 		$cycles_loaned=  inps.cycles_loaned   && parseFloat(inps.cycles_loaned.value);
-		$apr=            inps.apr             && parseFloat(inps.apr.value / ((inps.apr.className.search( /\bpercent\b/ )>=0) ? 100 : 1));
-		$downpayment=    inps.downpayment     && parseFloat(inps.downpayment.value / ((inps.downpayment.className.search( /\bpercent\b/ )>=0) ? 100 : 1));
+		$apr=            inps.apr             && parseFloat(inps.apr.value) / ((inps.apr.className.search( /\bpercent\b/ )>=0) ? 100 : 1);
+		$downpayment=    inps.downpayment     && parseFloat(inps.downpayment.value) / ((inps.downpayment.className.search( /\bpercent\b/ )>=0) ? 100 : 1);
 		$cycles_per_year=inps.cycles_per_year && parseFloat(inps.cycles_per_year.value);  }
 
 	var _total_price_=Math.roundTo($amount||0, this.currency.decimalPlaces),
@@ -48,11 +51,12 @@ SoftMoon.WebWare.Amortization_InterestCalculator=function($amount, $cycles_loane
 		if (_total_price_!==0)  _downpayment_rate_=_downpayment_/_total_price_;
 		else  _downpayment_rate_=0;  }
 
+	// note if $downpayment is a negative value <0 then it is considered a "cash-back" or "cash-loan-addition" to the cost of the item sold
 	if ($downpayment<1 && $downpayment>(-1))  {    //if $downpayment is a percentage value then it becomes the downpayment rate
 		this._flag_fixedDownPayment=false;
 		_downpayment_rate_=$downpayment||0;
 		_downpayment_=Math.roundTo(_total_price_*_downpayment_rate_, this.currency.decimalPlaces);  }
-	else  {    //if $downpayment is a negative value <0 then it is considered a "cash-back" or "cash-loan-addition" to the cost of the item sold
+	else  {
 		_downpayment_=Math.roundTo($downpayment||0, this.currency.decimalPlaces),
 		this._flag_fixedDownPayment=true;
 		calcDownRate();  }
@@ -107,7 +111,13 @@ SoftMoon.WebWare.Amortization_InterestCalculator=function($amount, $cycles_loane
 						Math.roundTo($cp/(this.cycle_percentage_rate / (1 - Math.pow(1 + this.cycle_percentage_rate, -(this.cycles_loaned)))), this.currency_decimalPlaces);}  },
 
 		total_interest: { enumerable: true,
-			get: function() {return Math.roundTo(this.cyclical_payment*this.cycles_loaned-this.loan_amount, this.currency.decimalPlaces);}  }  });
+			get: function() {return Math.roundTo(this.cyclical_payment*this.cycles_loaned-this.loan_amount, this.currency.decimalPlaces);}  },
+
+//  Note this property below is for user-defined data associated with this Calculator instance.
+//  It is not used by this script.
+		_: {enumerable: false,  writable: true,  value: new Object}  });
+
+	Object.seal(this);
 
 	if (this.form)  {this.bindForm(this.form);  this.updateForm();}  }
 
@@ -120,8 +130,32 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.bindForm=function($fo
 	this.form=$form;
 	$form.calculator=this;
 	var p, inps=$form.elements;
-	for (p in inps)  {if (this[inps[p].name])  inps[p].onchange=function() {this.form.calculator.updateForm(this);}};
-	if (inps.show_Amortization)  inps.show_Amortization.onclick=function() {this.form.calculator.popupAmortization();};  }
+	for (p in inps)  {if (this[inps[p].name])  inps[p].addEventListener("change", this.formHandlers.onchange);}
+	if (inps.show_Amortization)  inps.show_Amortization.addEventListener("click", this.formHandlers.showTable);  }
+
+
+//   These handlers are not meant to be executed on the Calculator instance;
+//   rather, they are to be replaced as the developer sees fit.
+SoftMoon.WebWare.Amortization_InterestCalculator.prototype.formHandlers={
+	onchange: function() {this.form.calculator.updateForm(this);},
+	showTable: function() {this.form.calculator.popupAmortization();}  }
+
+
+SoftMoon.WebWare.Amortization_InterestCalculator.prototype.unbindForm=function()  {
+	var p, inps=this.form.elements;
+	for (p in inps)  {if (this[inps[p].name])  inps[p].removeEventListener("change", this.formHandlers.onchange);}
+	if (inps.show_Amortization)  inps.show_Amortization.removeEventListener("click", this.formHandlers.showTable);
+	delete this.form.calculator;
+	this.form=null;  }
+
+
+
+
+SoftMoon.WebWare.Amortization_InterestCalculator.prototype.syncToForm=function($form)  {
+	if (typeof $form != "object"  ||  !($form instanceof Element)  ||  $form.nodeName!="FORM")
+		throw new Error('"syncToForm()" of an instance of SoftMoon.WebWare.Amortization_InterestCalculator requires a DOM form Element to be passed in.');
+	var p, inps=$form.elements;
+	for (p in this)  {if  (inps[p])  this[p]=parseFloat(inps[p].value) / ((inps[p].className.search( /\bpercent\b/ )>=0) ? 100 : 1);}  }
 
 
 
@@ -129,16 +163,16 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.bindForm=function($fo
 SoftMoon.WebWare.Amortization_InterestCalculator.prototype.updateForm=function($inp)  {
 	var p, fInps=($inp) ? $inp.form.elements : this.form.elements;
 	if ($inp)  this[$inp.name] = parseFloat($inp.value) / (($inp.className.search( /\bpercent\b/ )>=0) ? 100 : 1);
-	for (p in this)  {  if (fInps[p]  &&  fInps[p]!==$inp)
+	for (p in this)  {if (this.hasOwnProperty(p)  &&  fInps[p]  &&  fInps[p]!==$inp)
 		fInps[p].value = this[p] * ((fInps[p].className.search( /\bpercent\b/ )>=0) ? 100 : 1);  }  }
 
 
 
 
 SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization=function($container, $_flag_archiveData, $_flag_includeSummary)  {
-	if (typeof $_flag_includeSummary == 'undefined')  $_flag_includeSummary=this.popupAmortization._flag_includeSummary;
-	if (typeof $_flag_archiveData == 'undefined')  $_flag_archiveData=this.popupAmortization._flag_archiveData;
-	if (typeof $container == 'undefined')  $container=this.popupAmortization.defaultContainer;
+	if (typeof $_flag_includeSummary == 'undefined')  $_flag_includeSummary=this.amortTbl._flag_includeSummary;
+	if (typeof $_flag_archiveData == 'undefined')  $_flag_archiveData=this.amortTbl._flag_archiveData;
+	if (typeof $container == 'undefined')  $container=this.amortTbl.defaultContainer;
 	if (typeof $container == "string")  $container=document.getElementById($container);
 	if (typeof $container != "object"  ||  !($container instanceof Element  ||  $container instanceof DocumentFragment))
 		throw new Error('popupAmortization of an instance of SoftMoon.WebWare.Amortization_InterestCalculator requires a:\n • DOM Element or\n • Document Fragment\n as a container to hold a generated Amortization Table.\n None provided or found.');
@@ -152,9 +186,10 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization=fun
 //  • a string name of the Element's id
 //  • a DOM Element capable of childNodes
 //  • a Document Fragment
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization.defaultContainer='amortization';
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization._flag_includeSummary=true;
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization._flag_archiveData=true;
+SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortTbl={
+	defaultContainer: 'amortization',
+	_flag_includeSummary: true,
+	_flag_archiveData: true  };
 
 
 
@@ -300,7 +335,19 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortizationTable_tex
 	principle: 'Principle Paid',
 	balance: 'Balance Due'  }
 
+
+
+
 // you may edit, or replace → (respecting the note below), the following function to reflect proper currency text-output for your region:
 SoftMoon.WebWare.Amortization_InterestCalculator.prototype.currency=function(x) {return this.currency.symbol+x.toFixed(this.currency.decimalPlaces)}
 SoftMoon.WebWare.Amortization_InterestCalculator.prototype.currency.symbol="$";   //  €  £  ¤  ¥  etc.
 SoftMoon.WebWare.Amortization_InterestCalculator.prototype.currency.decimalPlaces=2;  //note the calculator depends on the existence of this property
+
+
+
+
+;(function() {
+	for (var p in SoftMoon.WebWare.Amortization_InterestCalculator.prototype)  {
+		Object.defineProperty(SoftMoon.WebWare.Amortization_InterestCalculator.prototype, p, {enumerable: false,  writable: true});	 }
+	Object.seal(SoftMoon.WebWare.Amortization_InterestCalculator.prototype);
+})();
