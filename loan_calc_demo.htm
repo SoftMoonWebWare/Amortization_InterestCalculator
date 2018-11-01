@@ -81,7 +81,9 @@ var myCalc=new SoftMoon.WebWare.Amortization_InterestCalculator(document.forms.l
 
 <!--  The default id for the container that receives the created Amortization Table pop-up is shown below.
       It may be changed and customized for each of multiple calculators (see the script).
-      The container may be any Element capable of childNodes, and may be placed anywhere in the document.  -->
+      The container may be any Element capable of content (childNodes), and may be placed anywhere in the document.
+      The container may have any other pre-existing content, and the created Table will be appended to the end,
+      or the first offspring found with the className "amortization" (by default - can be changed) will be replaced  -->
 <div id='amortization'></div>
 
 </body>
