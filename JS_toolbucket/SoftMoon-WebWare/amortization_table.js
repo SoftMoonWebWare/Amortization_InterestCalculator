@@ -1,4 +1,5 @@
-/*  Amortization & Interest Calculator 2.0   Nov 1, 2018; Sept 28, 2023
+//  character-encoding: UTF-8 UNIX   tab-spacing: 2   word-wrap: no   standard-line-length: 180   max-line-length: 2400
+/*  Amortization & Interest Calculator 2.0.2   Nov 1, 2018; December 10, 2023
  *  copyright © 2016, 2018, 2023 Joe Golembieski, SoftMoon-WebWare
  *  http://softmoon-webware.com/
  *
@@ -16,23 +17,25 @@
 		You should have received a copy of the GNU General Public License
 		along with this program.  If not, see <http://www.gnu.org/licenses/>   */
 
-//  character-encoding: UTF-8 UNIX   tab-spacing: 2   word-wrap: no   standard-line-length: 180   max-line-length: 2400
 
 //  for ECMAScript 5;  not for MSIE<9
 
+'use strict';
 
 //rounds  x  to  dp  decimal places.
 if (typeof Math.roundTo !== 'function')
 	Math.roundTo=function(dp, x)  {return Math.round(x*Math.pow(10,dp))/Math.pow(10,dp);}
 
+// these are our global namespaces
+const SoftMoon=Object.defineProperty({}, "WebWare", {value:{}, enumerable:true});
 
-if (typeof SoftMoon !== 'object')  var SoftMoon={};
-if (typeof SoftMoon.WebWare !== 'object')  SoftMoon.WebWare={};
 
-
+{  //open a private namespace
+	
+SoftMoon.WebWare.Amortization_InterestCalculator=Amortization_InterestCalculator;
 
 //all $values passed in to this constructor and the setter-functions should be Numeric
-SoftMoon.WebWare.Amortization_InterestCalculator=function($amount, $cycles_loaned, $apr, $downpayment, $cycles_per_year)  { //all these constructor arguments are optional
+function Amortization_InterestCalculator($amount, $cycles_loaned, $apr, $downpayment, $cycles_per_year)  { //all these constructor arguments are optional
 //                                              =function($formElement)  //  alternative format using DOM form element to associate with this calculator instance
 	if (!new.target)  throw new Error('“SoftMoon.WebWare.Amortization_InterestCalculator()” is a constructor, not a function.');
 	if (arguments[0] instanceof Element  &&  arguments[0].nodeName=='FORM')  {
@@ -40,8 +43,8 @@ SoftMoon.WebWare.Amortization_InterestCalculator=function($amount, $cycles_loane
 		var inps=this.form.elements;
 		$amount=         inps.total_price     && parseFloat(inps.total_price.value);
 		$cycles_loaned=  inps.cycles_loaned   && parseFloat(inps.cycles_loaned.value);
-		$apr=            inps.apr             && parseFloat(inps.apr.value) / ((inps.apr.className.search( /\bpercent\b/ )>=0) ? 100 : 1);
-		$downpayment=    inps.downpayment     && parseFloat(inps.downpayment.value) / ((inps.downpayment.className.search( /\bpercent\b/ )>=0) ? 100 : 1);
+		$apr=            inps.apr             && parseFloat(inps.apr.value) / (inps.apr.classList.contains("percent") ? 100 : 1);
+		$downpayment=    inps.downpayment     && parseFloat(inps.downpayment.value) / (inps.downpayment.classList.contains("percent") ? 100 : 1);
 		$cycles_per_year=inps.cycles_per_year && parseFloat(inps.cycles_per_year.value);  }
 
 	var _total_price_=Math.roundTo(this.currency.decimalPlaces, $amount||0),
@@ -124,7 +127,7 @@ SoftMoon.WebWare.Amortization_InterestCalculator=function($amount, $cycles_loane
 
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.bindForm=function($form)  {
+Amortization_InterestCalculator.prototype.bindForm=function($form)  {
 	if (typeof $form != "object"  ||  !($form instanceof Element)  ||  $form.nodeName!="FORM")
 		throw new Error('“bindForm()” of an instance of “SoftMoon.WebWare.Amortization_InterestCalculator” requires a DOM form Element to be passed in.')
 	this.form=$form;
@@ -136,12 +139,12 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.bindForm=function($fo
 
 //   These handlers are not meant to be executed on the Calculator instance;
 //   rather, they are to be replaced as the developer sees fit.
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.formHandlers={
+Amortization_InterestCalculator.prototype.formHandlers={
 	onchange: function() {this.form.calculator.updateForm(this);},
 	showTable: function() {this.form.calculator.popupAmortization();}  }
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.unbindForm=function()  {
+Amortization_InterestCalculator.prototype.unbindForm=function()  {
 	var p, inps=this.form.elements;
 	for (p in inps)  {if (this[inps[p].name])  inps[p].removeEventListener("change", this.formHandlers.onchange);}
 	if (inps.show_Amortization)  inps.show_Amortization.removeEventListener("click", this.formHandlers.showTable);
@@ -151,25 +154,25 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.unbindForm=function()
 
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.syncToForm=function($form)  {
+Amortization_InterestCalculator.prototype.syncToForm=function($form)  {
 	if (!($form instanceof Element)  ||  $form.nodeName!="FORM")
 		throw new Error('“syncToForm()” of an instance of “SoftMoon.WebWare.Amortization_InterestCalculator” requires a DOM form Element to be passed in.');
 	var p, inps=$form.elements;
-	for (p in this)  {if  (inps[p])  this[p]=parseFloat(inps[p].value) / ((inps[p].className.search( /\bpercent\b/ )>=0) ? 100 : 1);}  }
+	for (p in this)  {if  (inps[p])  this[p]=parseFloat(inps[p].value) / (inps[p].classList.contains("percent") ? 100 : 1);}  }
 
 
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.updateForm=function($inp)  {
+Amortization_InterestCalculator.prototype.updateForm=function($inp)  {
 	var p, fInps=($inp) ? $inp.form.elements : this.form.elements;
-	if ($inp)  this[$inp.name] = parseFloat($inp.value) / (($inp.className.search( /\bpercent\b/ )>=0) ? 100 : 1);
+	if ($inp)  this[$inp.name] = parseFloat($inp.value) / ($inp.classList.contains("percent") ? 100 : 1);
 	for (p in this)  {if (this.hasOwnProperty(p)  &&  fInps[p]  &&  fInps[p]!==$inp)
-		fInps[p].value = this[p] * ((fInps[p].className.search( /\bpercent\b/ )>=0) ? 100 : 1);  }  }
+		fInps[p].value = this[p] * (fInps[p].classList.contains("percent") ? 100 : 1);  }  }
 
 
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization=function($container, $_flag_archiveData, $_flag_includeSummary)  {
+Amortization_InterestCalculator.prototype.popupAmortization=function($container, $_flag_archiveData, $_flag_includeSummary)  {
 	if (typeof $_flag_includeSummary === 'undefined')  $_flag_includeSummary=this.amortTbl._flag_includeSummary;
 	if (typeof $_flag_archiveData === 'undefined')  $_flag_archiveData=this.amortTbl._flag_archiveData;
 	if (typeof $container === 'undefined')  $container=this.amortTbl.defaultContainer;
@@ -186,7 +189,7 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.popupAmortization=fun
 //  • a string name of the Element's id
 //  • a DOM Element capable of childNodes
 //  • a Document Fragment
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortTbl={
+Amortization_InterestCalculator.prototype.amortTbl={
 	defaultContainer: 'amortization',
 	_flag_includeSummary: true,
 	_flag_archiveData: true  };
@@ -194,7 +197,7 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortTbl={
 
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.buildSummaryTable=function($document)  {
+Amortization_InterestCalculator.prototype.buildSummaryTable=function($document)  {
 	var doc=$document||document,
 			table=doc.createElement('table'),
 			tbody, tr, td, tx, duration;
@@ -238,9 +241,9 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.buildSummaryTable=fun
 	return this.summaryTable;  }
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.summaryTable_className_attribute='loan_summary';
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.summaryTable_summary_attribute='loan payment summary';
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.summaryTable_text= {   // change ↓↑ for non-English language
+Amortization_InterestCalculator.prototype.summaryTable_className_attribute='loan_summary';
+Amortization_InterestCalculator.prototype.summaryTable_summary_attribute='loan payment summary';
+Amortization_InterestCalculator.prototype.summaryTable_text= {   // change ↓↑ for non-English language
 	totalPrice: 'Total Price',
 	downpayment: ['Down-payment', 'Cash Back'],   // [positive values, negative values]
 	loan_amount: 'Loan Amount',
@@ -254,7 +257,7 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.summaryTable_text= { 
 
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.buildAmortizationTable=function($_flag_includeSummary, $_flag_archiveData, $document)  { //  $_flag_ operands are Boolean
+Amortization_InterestCalculator.prototype.buildAmortizationTable=function($_flag_includeSummary, $_flag_archiveData, $document)  { //  $_flag_ operands are Boolean
 	var doc=$document||document,
 			table=doc.createElement('table'),
 			thead, tbody, tfoot, tr, td, tx,
@@ -324,9 +327,9 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.buildAmortizationTabl
 	return this.amortizationTable;  }
 
 
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortizationTable_className_attribute='amortization';
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortizationTable_summary_attribute='loan payment details';
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortizationTable_text= {   // change ↑↓ for non-English language
+Amortization_InterestCalculator.prototype.amortizationTable_className_attribute='amortization';
+Amortization_InterestCalculator.prototype.amortizationTable_summary_attribute='loan payment details';
+Amortization_InterestCalculator.prototype.amortizationTable_text= {   // change ↑↓ for non-English language
 	caption: 'Loan Payment Details',               //caption and
 	footer: null,                                  //  footer may be: •string of text  •document Node  •document fragment
 	cycleDuration: ["Month", "Week", "Cycle"],
@@ -339,15 +342,13 @@ SoftMoon.WebWare.Amortization_InterestCalculator.prototype.amortizationTable_tex
 
 
 // you may edit, or replace → (respecting the note below), the following function to reflect proper currency text-output for your region:
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.currency=function(x) {return this.currency.symbol+x.toFixed(this.currency.decimalPlaces)}
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.currency.symbol="$";   //  €  £  ¤  ¥  etc.
-SoftMoon.WebWare.Amortization_InterestCalculator.prototype.currency.decimalPlaces=2;  //note the calculator depends on the existence of this property
+Amortization_InterestCalculator.prototype.currency=function(x) {return this.currency.symbol+x.toFixed(this.currency.decimalPlaces)}
+Amortization_InterestCalculator.prototype.currency.symbol="$";   //  €  £  ¤  ¥  etc.
+Amortization_InterestCalculator.prototype.currency.decimalPlaces=2;  //note the calculator depends on the existence of this property
 
 
+for (const p in Amortization_InterestCalculator.prototype)  {
+	Object.defineProperty(Amortization_InterestCalculator.prototype, p, {enumerable: false,  writable: true});	 }
+Object.seal(Amortization_InterestCalculator.prototype);
 
-
-{  //open a private namespace
-	for (const p in SoftMoon.WebWare.Amortization_InterestCalculator.prototype)  {
-		Object.defineProperty(SoftMoon.WebWare.Amortization_InterestCalculator.prototype, p, {enumerable: false,  writable: true});	 }
-	Object.seal(SoftMoon.WebWare.Amortization_InterestCalculator.prototype);
-}
+} //close the private namespace
